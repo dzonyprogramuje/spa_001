@@ -1,7 +1,43 @@
-import { useGetNotesQuery } from "../features/notes/notesApi";
+import {
+  useAddNoteMutation,
+  useDeleteNoteMutation,
+  useGetNotesQuery,
+} from "../features/notes/notesApi";
+import { useAuth } from "react-oidc-context";
+import { type ChangeEvent, type KeyboardEvent, useState } from "react";
 
 export const TasksComponent = () => {
+  const { user } = useAuth();
   const { data: notes, error, isLoading } = useGetNotesQuery();
+  const [deleteNote] = useDeleteNoteMutation();
+  const [addNote] = useAddNoteMutation();
+  const [inputValue, setInputValue] = useState<string>("");
+
+  const handleAddNote = async () => {
+    if (inputValue.trim()) {
+      try {
+        await addNote({
+          title: inputValue,
+          author: user?.profile.sid,
+        }).unwrap();
+        setInputValue("");
+      } catch (error) {
+        console.error("Błąd dodawania notatki:", error);
+      }
+    }
+  };
+
+  const handleKeyDown = async (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") {
+      // addNote({ title: inputValue, author: user?.profile.sid });
+      await handleAddNote();
+      setInputValue("");
+    }
+  };
+
+  const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setInputValue(event.target.value);
+  };
 
   if (isLoading) {
     return <div>Ładowanie zadań...</div>;
@@ -13,13 +49,29 @@ export const TasksComponent = () => {
 
   return (
     <div className="flex flex-col gap-4 w-1/2 mx-auto gap-4">
+      <input
+        type="text"
+        className="border border-black rounded-md p-3"
+        onChange={handleInputChange}
+        onKeyDown={handleKeyDown}
+        value={inputValue}
+        placeholder="Input your task and press Enter"
+      />
       {notes?.map((note) => (
         <div
-          className="flex flex-col gap-2 border border-gray-300 px-2 py-6 rounded-xs"
+          className="flex justify-between gap-2 border border-gray-300 px-2 py-6 rounded-xs"
           key={note.id}
         >
-          <h2 className="font-bold">{note.title}</h2>
-          <p>{note.content}</p>
+          <div>
+            <h2 className="font-bold">{note.title}</h2>
+            <p>ID: {note.id}</p>
+          </div>
+          <button
+            className="text-white bg-red-600 px-12 py-2 hover:cursor-pointer hover:bg-red-700 rounded-md"
+            onClick={() => deleteNote(note.id)}
+          >
+            Usun
+          </button>
         </div>
       ))}
     </div>

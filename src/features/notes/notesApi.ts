@@ -3,8 +3,7 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 interface Note {
   id: number;
   title: string;
-  content: string;
-  tags: string[];
+  author: string;
 }
 
 export const notesApi = createApi({
@@ -30,7 +29,15 @@ export const notesApi = createApi({
       }),
       invalidatesTags: ["Notes"],
     }),
+    deleteNote: builder.mutation<void, number>({
+      query: (id) => ({
+        url: `/notes/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Notes"],
+    }),
   }),
 });
 
-export const { useGetNotesQuery, useAddNoteMutation } = notesApi;
+export const { useGetNotesQuery, useAddNoteMutation, useDeleteNoteMutation } =
+  notesApi;

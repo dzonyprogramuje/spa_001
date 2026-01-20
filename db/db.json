@@ -1,6 +1,24 @@
 {
   "notes": [
-    { "id": 1, "title": "Zakupy", "content": "Mleko, chleb", "tags": ["todo"] },
-    { "id": 2, "title": "Spotkanie", "content": "O 15:00", "tags": ["work"] }
+    {
+      "id": "cd3c",
+      "title": "fdfdf",
+      "author": "WYH3KFbMg31JAoR9Nv2WQKkR"
+    },
+    {
+      "id": "a7d6",
+      "title": "sdfsdf",
+      "author": "WYH3KFbMg31JAoR9Nv2WQKkR"
+    },
+    {
+      "id": "f1dc",
+      "title": "sdfsdf",
+      "author": "WYH3KFbMg31JAoR9Nv2WQKkR"
+    },
+    {
+      "id": "5812",
+      "title": "sdfsdf",
+      "author": "WYH3KFbMg31JAoR9Nv2WQKkR"
+    }
   ]
 }
