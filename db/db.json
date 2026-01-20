@@ -1,0 +1,6 @@
+{
+  "notes": [
+    { "id": 1, "title": "Zakupy", "content": "Mleko, chleb", "tags": ["todo"] },
+    { "id": 2, "title": "Spotkanie", "content": "O 15:00", "tags": ["work"] }
+  ]
+}
