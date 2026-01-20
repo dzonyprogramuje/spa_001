@@ -8,7 +8,13 @@ import { type ChangeEvent, type KeyboardEvent, useState } from "react";
 
 export const TasksComponent = () => {
   const { user } = useAuth();
-  const { data: notes, error, isLoading } = useGetNotesQuery();
+  const authorId = user?.profile.sid as string;
+  const {
+    data: notes,
+    error,
+    isLoading,
+  } = useGetNotesQuery(authorId, { skip: !authorId });
+
   const [deleteNote] = useDeleteNoteMutation();
   const [addNote] = useAddNoteMutation();
   const [inputValue, setInputValue] = useState<string>("");
