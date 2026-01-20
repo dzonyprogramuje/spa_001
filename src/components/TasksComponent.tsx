@@ -51,7 +51,7 @@ export const TasksComponent = () => {
     <div className="flex flex-col gap-4 w-1/2 mx-auto gap-4">
       <input
         type="text"
-        className="border border-black rounded-md p-3"
+        className="rounded-md p-3 shadow-sm outline outline-gray-300 focus:outline-gray-400"
         onChange={handleInputChange}
         onKeyDown={handleKeyDown}
         value={inputValue}
@@ -59,7 +59,7 @@ export const TasksComponent = () => {
       />
       {notes?.map((note) => (
         <div
-          className="flex justify-between gap-2 border border-gray-300 px-2 py-6 rounded-xs"
+          className="flex justify-between gap-2 px-6 py-4 rounded-md bg-white shadow-sm"
           key={note.id}
         >
           <div>

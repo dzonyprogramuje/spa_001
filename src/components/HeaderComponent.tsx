@@ -5,10 +5,13 @@ export const HeaderComponent = () => {
 
   return (
     <header className="flex w-full justify-between items-center p-8 bg-gray-900 text-white">
-      <h1>
-        Welcome {user?.profile.name}👋{" "}
+      <div>
+        <h1 className="font-bold text-2xl">
+          Welcome, {user?.profile.name}
+          <span className="text-3xl"> 👋 </span>
+        </h1>
         <span className="text-green-300">{user?.profile.email}</span>
-      </h1>
+      </div>
       <button
         className="text-white bg-red-600 px-12 py-2 hover:cursor-pointer hover:bg-red-700 rounded-md"
         onClick={() => removeUser()}
