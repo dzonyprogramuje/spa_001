@@ -4,7 +4,11 @@ import {
   useGetNotesQuery,
 } from "../features/notes/notesApi";
 import { useAuth } from "react-oidc-context";
-import { type ChangeEvent, type KeyboardEvent, useState } from "react";
+import { useForm } from "react-hook-form";
+
+type FormFields = {
+  taskInput: string;
+};
 
 export const TasksComponent = () => {
   const { user } = useAuth();
@@ -17,32 +21,27 @@ export const TasksComponent = () => {
 
   const [deleteNote] = useDeleteNoteMutation();
   const [addNote] = useAddNoteMutation();
-  const [inputValue, setInputValue] = useState<string>("");
 
-  const handleAddNote = async () => {
-    if (inputValue.trim()) {
-      try {
-        await addNote({
-          title: inputValue,
-          author: user?.profile.email,
-        }).unwrap();
-        setInputValue("");
-      } catch (error) {
-        console.error("Błąd dodawania notatki:", error);
-      }
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<FormFields>({
+    mode: "onSubmit",
+    reValidateMode: "onBlur",
+  });
+
+  const handleAddNote = async (data: FormFields) => {
+    try {
+      await addNote({
+        title: data?.taskInput,
+        author: user?.profile.email,
+      }).unwrap();
+      reset();
+    } catch (error) {
+      console.error("Błąd dodawania notatki:", error);
     }
-  };
-
-  const handleKeyDown = async (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Enter") {
-      // addNote({ title: inputValue, author: user?.profile.sid });
-      await handleAddNote();
-      setInputValue("");
-    }
-  };
-
-  const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
-    setInputValue(event.target.value);
   };
 
   if (isLoading) {
@@ -54,15 +53,29 @@ export const TasksComponent = () => {
   }
 
   return (
-    <div className="flex flex-col gap-4 w-1/2 mx-auto gap-4">
-      <input
-        type="text"
-        className="rounded-md p-3 shadow-sm outline outline-gray-300 focus:outline-gray-400"
-        onChange={handleInputChange}
-        onKeyDown={handleKeyDown}
-        value={inputValue}
-        placeholder="Input your task and press Enter"
-      />
+    <div className="flex flex-col gap-4 w-1/2 mx-auto">
+      <form onSubmit={handleSubmit(handleAddNote)}>
+        <input
+          {...register("taskInput", {
+            required: "Tresc nie moze byc pusta",
+            minLength: {
+              value: 3,
+              message: "Tresc musi miec conajmniej 3 znaki",
+            },
+            maxLength: {
+              value: 100,
+              message: "Tresc moze miec maksymalnie 100 znakow",
+            },
+          })}
+          type="text"
+          className="rounded-md p-3 shadow-sm outline outline-gray-300 focus:outline-gray-400"
+          placeholder="Input your task and press Enter"
+        />
+        {errors.taskInput && (
+          <p className="text-red-600 mt-1">{errors.taskInput.message}</p>
+        )}
+      </form>
+
       {notes?.map((note) => (
         <div
           className="flex justify-between gap-2 px-6 py-4 rounded-md bg-white shadow-sm"
