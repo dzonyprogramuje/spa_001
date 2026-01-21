@@ -13,7 +13,7 @@ export const HeaderComponent = () => {
         <span className="text-green-300">{user?.profile.email}</span>
       </div>
       <button
-        className="text-white bg-red-600 px-12 py-2 hover:cursor-pointer hover:bg-red-700 rounded-md"
+        className="text-white bg-red-600 px-12 py-3 hover:cursor-pointer hover:bg-red-700 rounded-md"
         onClick={async () => {
           await removeUser();
           await signoutRedirect({

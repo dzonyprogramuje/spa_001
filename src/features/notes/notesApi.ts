@@ -36,8 +36,39 @@ export const notesApi = createApi({
       }),
       invalidatesTags: ["Notes"],
     }),
+    deleteAll: builder.mutation<void, Note[] | undefined>({
+      queryFn: async (notes, _queryApi, _extraOptions, fetchWithBQ) => {
+        if (!notes || notes.length === 0) {
+          return { data: undefined };
+        }
+
+        try {
+          await Promise.all(
+            notes.map((note) =>
+              fetchWithBQ({
+                url: `/notes/${note.id}`,
+                method: "DELETE",
+              }),
+            ),
+          );
+          return { data: undefined };
+        } catch (error) {
+          return {
+            error: {
+              status: "CUSTOM_ERROR",
+              error: String(error),
+            },
+          };
+        }
+      },
+      invalidatesTags: ["Notes"],
+    }),
   }),
 });
 
-export const { useGetNotesQuery, useAddNoteMutation, useDeleteNoteMutation } =
-  notesApi;
+export const {
+  useGetNotesQuery,
+  useAddNoteMutation,
+  useDeleteNoteMutation,
+  useDeleteAllMutation,
+} = notesApi;
