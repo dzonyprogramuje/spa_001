@@ -11,6 +11,7 @@ const oidcConfig = {
   client_id: "react-app",
   redirect_uri: "http://127.0.0.1:5173",
   response_type: "code",
+  post_logout_redirect_uri: window.location.origin,
   onSigninCallback: () => {
     // Czyści URL z parametrów Keycloaka po zalogowaniu
     window.history.replaceState({}, document.title, window.location.pathname);

@@ -8,7 +8,7 @@ import { type ChangeEvent, type KeyboardEvent, useState } from "react";
 
 export const TasksComponent = () => {
   const { user } = useAuth();
-  const authorId = user?.profile.sid as string;
+  const authorId = user?.profile.email as string;
   const {
     data: notes,
     error,
@@ -24,7 +24,7 @@ export const TasksComponent = () => {
       try {
         await addNote({
           title: inputValue,
-          author: user?.profile.sid,
+          author: user?.profile.email,
         }).unwrap();
         setInputValue("");
       } catch (error) {
