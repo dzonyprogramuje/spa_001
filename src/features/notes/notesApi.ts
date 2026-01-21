@@ -1,6 +1,6 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-interface Note {
+export interface Note {
   id: number;
   title: string;
   author: string;
