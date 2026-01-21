@@ -26,7 +26,7 @@ export const TasksComponent = () => {
     register,
     handleSubmit,
     reset,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<FormFields>({
     mode: "onSubmit",
     reValidateMode: "onBlur",
@@ -67,8 +67,9 @@ export const TasksComponent = () => {
               message: "Tresc moze miec maksymalnie 100 znakow",
             },
           })}
+          disabled={isSubmitting}
           type="text"
-          className="rounded-md p-3 shadow-sm outline outline-gray-300 focus:outline-gray-400"
+          className="w-full rounded-md p-3 shadow-sm outline outline-gray-300 focus:outline-gray-400 disabled:outline-amber-200"
           placeholder="Input your task and press Enter"
         />
         {errors.taskInput && (
