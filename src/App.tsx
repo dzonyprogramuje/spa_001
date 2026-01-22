@@ -5,17 +5,14 @@ import { TasksComponent } from "./components/TasksComponent.tsx";
 function App() {
   const { isLoading, error, isAuthenticated, signinRedirect } = useAuth();
 
-  // 1. Stan ładowania (np. sprawdzanie ciasteczek sesji)
   if (isLoading) {
     return <div>Ładowanie sesji...</div>;
   }
 
-  // 2. Obsługa błędów
   if (error) {
     return <div>Błąd: {error.message}</div>;
   }
 
-  // 3. Widok po zalogowaniu
   if (isAuthenticated) {
     return (
       <div className="h-screen w-screen flex flex-col gap-8">
@@ -25,7 +22,6 @@ function App() {
     );
   }
 
-  // 4. Widok startowy (niezalogowany)
   return (
     <div className="h-screen w-screen flex-col justify-center items-center">
       <h1>Aplikacja Demo React + Keycloak</h1>

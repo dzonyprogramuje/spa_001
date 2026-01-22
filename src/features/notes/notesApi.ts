@@ -11,7 +11,7 @@ export const notesApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: "http://localhost:3001",
     prepareHeaders: (headers) => {
-      // TODO: dodasz token z OIDC później
+      // TODO: add auth token if needed later
       return headers;
     },
   }),
