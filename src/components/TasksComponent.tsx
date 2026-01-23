@@ -59,6 +59,7 @@ export const TasksComponent = () => {
       <div className="flex flex-col gap-4 flex-1">
         <form onSubmit={handleSubmit(handleAddNote)}>
           <input
+            data-testid="task-input"
             {...register("taskInput", {
               required: "Tresc nie moze byc pusta",
               minLength: {
