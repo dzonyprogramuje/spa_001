@@ -5,11 +5,35 @@ import {
   useDeleteAllMutation,
 } from "../features/notes/notesApi";
 import { useAuth } from "react-oidc-context";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  Button,
+  Card,
+  CardBody,
+  DatePicker,
+  Input,
+  Switch,
+  Tab,
+  Tabs,
+} from "@heroui/react";
 
-type FormFields = {
-  taskInput: string;
-};
+const schema = z.object({
+  taskInput: z
+    .string()
+    .min(3, { message: "Tresc musi miec conajmniej 3 znaki" })
+    .max(100, { message: "Tresc moze miec maksymalnie 100 znakow" }),
+  taskCreated: z.any(),
+  taskEnd: z.any(),
+  isWork: z.boolean(),
+});
+
+type FormFields = z.infer<typeof schema>;
+
+// type FormFields = {
+//   taskInput: string;
+// };
 
 export const TasksComponent = () => {
   const { user } = useAuth();
@@ -28,10 +52,19 @@ export const TasksComponent = () => {
     register,
     handleSubmit,
     reset,
+    setError,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<FormFields>({
-    mode: "onSubmit",
-    reValidateMode: "onBlur",
+    mode: "onChange",
+    reValidateMode: "onChange",
+    resolver: zodResolver(schema),
+    defaultValues: {
+      taskInput: "",
+      isWork: false,
+      taskCreated: new Date(),
+      taskEnd: null,
+    },
   });
 
   const handleAddNote = async (data: FormFields) => {
@@ -39,9 +72,15 @@ export const TasksComponent = () => {
       await addNote({
         title: data?.taskInput,
         author: user?.profile.email,
+        taskCreated: data?.taskCreated,
+        taskEnd: data?.taskEnd,
+        kind: data?.isWork ? "work" : "private",
       }).unwrap();
       reset();
     } catch (error) {
+      setError("taskInput", {
+        message: "E R R O R: Nie mozna dodac notatki",
+      });
       console.error("Błąd dodawania notatki:", error);
     }
   };
@@ -54,60 +93,123 @@ export const TasksComponent = () => {
     return <div>Błąd podczas ładowania zadań</div>;
   }
 
-  return (
-    <div className="flex w-1/2 mx-auto">
-      <div className="flex flex-col gap-4 flex-1">
-        <form onSubmit={handleSubmit(handleAddNote)}>
-          <input
-            data-testid="task-input"
-            {...register("taskInput", {
-              required: "Tresc nie moze byc pusta",
-              minLength: {
-                value: 3,
-                message: "Tresc musi miec conajmniej 3 znaki",
-              },
-              maxLength: {
-                value: 100,
-                message: "Tresc moze miec maksymalnie 100 znakow",
-              },
-            })}
-            disabled={isSubmitting}
-            type="text"
-            className="w-full rounded-md p-3 shadow-sm outline outline-gray-300 focus:outline-gray-400 disabled:outline-amber-200"
-            placeholder="Input your task and press Enter"
-          />
-          {errors.taskInput && (
-            <p className="text-red-600 mt-1">{errors.taskInput.message}</p>
-          )}
-        </form>
-
-        {notes?.map((note) => (
-          <div
-            className="flex justify-between gap-2 px-6 py-4 rounded-md bg-white shadow-sm"
-            key={note.id}
-          >
-            <div>
-              <h2 className="font-bold">{note.title}</h2>
-              <p>ID: {note.id}</p>
+  const renderNotes = (
+    <div className="flex flex-col gap-4">
+      {notes?.map((note) => (
+        <Card
+          key={note.id}
+          className={`border-l-5 ${
+            note.kind === "private"
+              ? "border-primary-500"
+              : "border-success-500"
+          }`}
+        >
+          <CardBody>
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-tiny uppercase font-bold">{note.kind}</p>
+                <small className="text-default-500">
+                  {note.taskCreated?.toString()}
+                </small>
+                <h4 className="font-bold text-large">{note.title}</h4>
+              </div>
+              <Button color="danger" onPress={() => deleteNote(note.id)}>
+                Remove
+              </Button>
             </div>
-            <button
-              className="text-white bg-red-600 px-12 py-2 hover:cursor-pointer hover:bg-red-700 rounded-md"
-              onClick={() => deleteNote(note.id)}
-            >
-              Usun
-            </button>
-          </div>
-        ))}
+          </CardBody>
+        </Card>
+      ))}
+    </div>
+  );
+
+  return (
+    <div className="flex w-1/2 mx-auto gap-4">
+      <div className="flex flex-col gap-4 flex-1">
+        <Card>
+          <CardBody className="flex flex-col gap-4">
+            <form onSubmit={handleSubmit(handleAddNote)}>
+              <Input
+                isInvalid={!!errors.taskInput}
+                errorMessage={errors?.taskInput && errors.taskInput.message}
+                data-testid="task-input"
+                {...register("taskInput")}
+                disabled={isSubmitting}
+                type="text"
+                placeholder="Input your task and press Enter"
+              />
+            </form>
+            {/*<DatePicker className="" label="Birth date" />*/}
+
+            <Controller
+              name="taskEnd"
+              control={control}
+              render={({ field }) => (
+                <DatePicker
+                  {...field}
+                  label="Task end date"
+                  // HeroUI DatePicker potrzebuje onChange przekazanego bezpośrednio
+                  onChange={(date) => field.onChange(date)}
+                />
+              )}
+            />
+
+            {/*<Switch size="sm">work</Switch>*/}
+
+            <Controller
+              name="isWork"
+              control={control}
+              render={({ field }) => (
+                <Switch
+                  isSelected={field.value}
+                  onValueChange={field.onChange}
+                  size="sm"
+                >
+                  Work
+                </Switch>
+              )}
+            />
+          </CardBody>
+        </Card>
+
+        <Tabs aria-label="Options" className="flex" fullWidth>
+          <Tab key="all" title="All tasks">
+            {renderNotes}
+          </Tab>
+          <Tab key="private" title="Private">
+            hoho private
+          </Tab>
+          <Tab key="work" title="Work">
+            hoho work
+          </Tab>
+        </Tabs>
       </div>
-      <div className="flex px-8 rounded-md">
-        <button
-          disabled={!notes || notes.length === 0}
-          onClick={() => deleteAllNotes(notes)}
-          className="h-min text-white bg-red-600 px-12 py-3 hover:cursor-pointer hover:bg-red-700 rounded-md disabled:bg-gray-300 disabled:cursor-default"
+
+      <div className="flex rounded-md">
+        <Button
+          color="danger"
+          isDisabled={!notes || notes.length === 0}
+          onPress={() => deleteAllNotes(notes)}
         >
           Remove all
-        </button>
+        </Button>
       </div>
     </div>
   );
 };
+
+/*
+TODO:
+1. Adjust task end date callendar
+2. adjust displaying date format
+3. display task end date in tas too
+4. implement filtering tasks in tabs
+
+
+...
+
+
+4. add edit task functionality
+
+
+ */
