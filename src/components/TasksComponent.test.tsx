@@ -4,10 +4,32 @@ import { render, screen } from "@testing-library/react";
 import { TasksComponent } from "./TasksComponent.tsx";
 import { useAuth } from "react-oidc-context";
 import type { User } from "oidc-client-ts";
-import { useGetNotesQuery } from "../features/notes/notesApi.ts";
 import { mockNotes } from "../features/notes/notesApi.test.tsx";
 import userEvent from "@testing-library/user-event";
 import { expect } from "vitest";
+
+import * as api from "../features/notes/notesApi.ts";
+
+const mockGetNotes = (opts: {
+  data?: unknown;
+  error?: unknown;
+  isLoading: boolean;
+}) => {
+  vi.mocked(api.useGetNotesQuery).mockReturnValue({
+    data: opts.data,
+    error: opts.error,
+    isLoading: opts.isLoading,
+  } as unknown as ReturnType<typeof api.useGetNotesQuery>);
+};
+
+const mockMutation = <T extends (...args: any[]) => any>(
+  hook: T,
+  triggerImpl: (...args: any[]) => any = () => {},
+) => {
+  const trigger = vi.fn(triggerImpl);
+  vi.mocked(hook).mockReturnValue([trigger, {}]);
+  return trigger;
+};
 
 vi.mock("react-oidc-context", () => ({
   useAuth: vi.fn(),
@@ -27,8 +49,6 @@ const renderWithProvider = () =>
     </Provider>,
   );
 
-const setupUser = () => userEvent.setup();
-
 describe("TasksComponent", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -39,12 +59,7 @@ describe("TasksComponent", () => {
   });
 
   it("should call useGetNotesQuery by initial render", async () => {
-    const api = await import("../features/notes/notesApi");
-    vi.mocked(useGetNotesQuery).mockReturnValue({
-      data: mockNotes,
-      error: undefined,
-      isLoading: false,
-    } as unknown as ReturnType<typeof useGetNotesQuery>);
+    mockGetNotes({ data: mockNotes, error: undefined, isLoading: false });
 
     renderWithProvider();
 
@@ -55,11 +70,7 @@ describe("TasksComponent", () => {
   });
 
   it("should render loading state", () => {
-    vi.mocked(useGetNotesQuery).mockReturnValue({
-      data: undefined,
-      error: undefined,
-      isLoading: true,
-    } as unknown as ReturnType<typeof useGetNotesQuery>);
+    mockGetNotes({ data: undefined, error: undefined, isLoading: true });
 
     renderWithProvider();
 
@@ -67,13 +78,7 @@ describe("TasksComponent", () => {
   });
 
   it("should render error state", async () => {
-    const { useGetNotesQuery } = await import("../features/notes/notesApi.ts");
-
-    vi.mocked(useGetNotesQuery).mockReturnValue({
-      data: undefined,
-      error: { status: 500 },
-      isLoading: false,
-    } as unknown as ReturnType<typeof useGetNotesQuery>);
+    mockGetNotes({ data: undefined, error: { status: 500 }, isLoading: false });
 
     renderWithProvider();
 
@@ -83,11 +88,7 @@ describe("TasksComponent", () => {
   });
 
   it("should render tasks component", () => {
-    vi.mocked(useGetNotesQuery).mockReturnValue({
-      data: mockNotes,
-      error: undefined,
-      isLoading: false,
-    } as unknown as ReturnType<typeof useGetNotesQuery>);
+    mockGetNotes({ data: mockNotes, error: undefined, isLoading: false });
 
     renderWithProvider();
 
@@ -96,19 +97,8 @@ describe("TasksComponent", () => {
   });
 
   it("should delete all notes", async () => {
-    const api = await import("../features/notes/notesApi");
-
-    const deleteAllTrigger = vi.fn();
-    vi.mocked(api.useDeleteAllMutation).mockReturnValue([
-      deleteAllTrigger,
-      {},
-    ] as unknown as ReturnType<typeof api.useDeleteAllMutation>);
-
-    vi.mocked(useGetNotesQuery).mockReturnValue({
-      data: mockNotes,
-      error: undefined,
-      isLoading: false,
-    } as unknown as ReturnType<typeof useGetNotesQuery>);
+    const deleteAllTrigger = mockMutation(api.useDeleteAllMutation);
+    mockGetNotes({ data: mockNotes, error: undefined, isLoading: false });
 
     renderWithProvider();
 
@@ -121,18 +111,8 @@ describe("TasksComponent", () => {
   });
 
   it("should delete note on delete button click", async () => {
-    const api = await import("../features/notes/notesApi");
-    const deleteNoteTrigger = vi.fn();
-    vi.mocked(api.useDeleteNoteMutation).mockReturnValue([
-      deleteNoteTrigger,
-      {},
-    ] as unknown as ReturnType<typeof api.useDeleteNoteMutation>);
-
-    vi.mocked(useGetNotesQuery).mockReturnValue({
-      data: mockNotes,
-      error: undefined,
-      isLoading: false,
-    } as unknown as ReturnType<typeof useGetNotesQuery>);
+    const deleteNoteTrigger = mockMutation(api.useDeleteNoteMutation);
+    mockGetNotes({ data: mockNotes, error: undefined, isLoading: false });
 
     renderWithProvider();
 
@@ -145,16 +125,9 @@ describe("TasksComponent", () => {
   });
 
   it("should add note on form submit", async () => {
-    const api = await import("../features/notes/notesApi");
-
-    const addNoteTrigger = vi.fn().mockReturnValue({
+    const addNoteTrigger = mockMutation(api.useAddNoteMutation, () => ({
       unwrap: () => Promise.resolve({}),
-    });
-
-    vi.mocked(api.useAddNoteMutation).mockReturnValue([
-      addNoteTrigger,
-      {},
-    ] as unknown as ReturnType<typeof api.useAddNoteMutation>);
+    }));
 
     renderWithProvider();
 
@@ -171,68 +144,36 @@ describe("TasksComponent", () => {
   });
 
   describe("Form Validation", () => {
+    const setupAddMock = () =>
+      mockMutation(api.useAddNoteMutation, () => ({
+        unwrap: () => Promise.resolve({}),
+      }));
+
+    const submitWithValue = async (value?: string) => {
+      renderWithProvider();
+      const user = userEvent.setup();
+      const input = screen.getByTestId("task-input");
+      if (value) await user.type(input, value);
+      await user.keyboard("{Enter}");
+    };
+
     it("should not submit empty input", async () => {
-      const api = await import("../features/notes/notesApi");
-
-      const addNoteTrigger = vi.fn().mockReturnValue({
-        unwrap: () => Promise.resolve({}),
-      });
-
-      vi.mocked(api.useAddNoteMutation).mockReturnValue([
-        addNoteTrigger,
-        {},
-      ] as unknown as ReturnType<typeof api.useAddNoteMutation>);
-
-      renderWithProvider();
-
-      const user = userEvent.setup();
-      await user.keyboard("{Enter}");
+      const addNoteTrigger = setupAddMock();
+      await submitWithValue();
 
       expect(addNoteTrigger).not.toHaveBeenCalled();
     });
 
     it("should not submit to short input", async () => {
-      const api = await import("../features/notes/notesApi");
-
-      const addNoteTrigger = vi.fn().mockReturnValue({
-        unwrap: () => Promise.resolve({}),
-      });
-
-      vi.mocked(api.useAddNoteMutation).mockReturnValue([
-        addNoteTrigger,
-        {},
-      ] as unknown as ReturnType<typeof api.useAddNoteMutation>);
-
-      renderWithProvider();
-
-      const user = userEvent.setup();
-      const input = screen.getByTestId("task-input");
-
-      await user.type(input, "A");
-      await user.keyboard("{Enter}");
+      const addNoteTrigger = setupAddMock();
+      await submitWithValue("A");
 
       expect(addNoteTrigger).not.toHaveBeenCalled();
     });
 
     it("should not submit to short input", async () => {
-      const api = await import("../features/notes/notesApi");
-
-      const addNoteTrigger = vi.fn().mockReturnValue({
-        unwrap: () => Promise.resolve({}),
-      });
-
-      vi.mocked(api.useAddNoteMutation).mockReturnValue([
-        addNoteTrigger,
-        {},
-      ] as unknown as ReturnType<typeof api.useAddNoteMutation>);
-
-      renderWithProvider();
-
-      const user = userEvent.setup();
-      const input = screen.getByTestId("task-input");
-
-      await user.type(input, "A".repeat(101));
-      await user.keyboard("{Enter}");
+      const addNoteTrigger = setupAddMock();
+      await submitWithValue("A".repeat(101));
 
       expect(addNoteTrigger).not.toHaveBeenCalled();
     });
