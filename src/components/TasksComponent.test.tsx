@@ -7,6 +7,7 @@ import type { User } from "oidc-client-ts";
 import { useGetNotesQuery } from "../features/notes/notesApi.ts";
 import { mockNotes } from "../features/notes/notesApi.test.tsx";
 import userEvent from "@testing-library/user-event";
+import { expect } from "vitest";
 
 vi.mock("react-oidc-context", () => ({
   useAuth: vi.fn(),
@@ -18,6 +19,15 @@ vi.mock("../features/notes/notesApi", () => ({
   useDeleteNoteMutation: vi.fn(() => [vi.fn(), {}]),
   useDeleteAllMutation: vi.fn(() => [vi.fn(), {}]),
 }));
+
+const renderWithProvider = () =>
+  render(
+    <Provider store={store}>
+      <TasksComponent />
+    </Provider>,
+  );
+
+const setupUser = () => userEvent.setup();
 
 describe("TasksComponent", () => {
   beforeEach(() => {
@@ -36,11 +46,7 @@ describe("TasksComponent", () => {
       isLoading: false,
     } as unknown as ReturnType<typeof useGetNotesQuery>);
 
-    render(
-      <Provider store={store}>
-        <TasksComponent />
-      </Provider>,
-    );
+    renderWithProvider();
 
     expect(api.useGetNotesQuery).toHaveBeenCalled();
     expect(api.useGetNotesQuery).toHaveBeenCalledWith("abc@test.com", {
@@ -55,11 +61,7 @@ describe("TasksComponent", () => {
       isLoading: true,
     } as unknown as ReturnType<typeof useGetNotesQuery>);
 
-    render(
-      <Provider store={store}>
-        <TasksComponent />
-      </Provider>,
-    );
+    renderWithProvider();
 
     expect(screen.getByText("Ładowanie zadań...")).toBeInTheDocument();
   });
@@ -73,11 +75,7 @@ describe("TasksComponent", () => {
       isLoading: false,
     } as unknown as ReturnType<typeof useGetNotesQuery>);
 
-    render(
-      <Provider store={store}>
-        <TasksComponent />
-      </Provider>,
-    );
+    renderWithProvider();
 
     expect(
       screen.getByText("Błąd podczas ładowania zadań"),
@@ -91,14 +89,35 @@ describe("TasksComponent", () => {
       isLoading: false,
     } as unknown as ReturnType<typeof useGetNotesQuery>);
 
-    render(
-      <Provider store={store}>
-        <TasksComponent />
-      </Provider>,
-    );
+    renderWithProvider();
 
     expect(screen.getByText("Title 1")).toBeInTheDocument();
     expect(screen.getByText("Title 2")).toBeInTheDocument();
+  });
+
+  it("should delete all notes", async () => {
+    const api = await import("../features/notes/notesApi");
+
+    const deleteAllTrigger = vi.fn();
+    vi.mocked(api.useDeleteAllMutation).mockReturnValue([
+      deleteAllTrigger,
+      {},
+    ] as unknown as ReturnType<typeof api.useDeleteAllMutation>);
+
+    vi.mocked(useGetNotesQuery).mockReturnValue({
+      data: mockNotes,
+      error: undefined,
+      isLoading: false,
+    } as unknown as ReturnType<typeof useGetNotesQuery>);
+
+    renderWithProvider();
+
+    const user = userEvent.setup();
+    const deleteAllButton = screen.getByRole("button", { name: /Remove all/i });
+    await user.click(deleteAllButton);
+
+    expect(deleteAllTrigger).toHaveBeenCalledTimes(1);
+    expect(deleteAllTrigger).toHaveBeenCalledWith(mockNotes);
   });
 
   it("should delete note on delete button click", async () => {
@@ -115,11 +134,7 @@ describe("TasksComponent", () => {
       isLoading: false,
     } as unknown as ReturnType<typeof useGetNotesQuery>);
 
-    render(
-      <Provider store={store}>
-        <TasksComponent />
-      </Provider>,
-    );
+    renderWithProvider();
 
     const user = userEvent.setup();
     const deleteButtons = screen.getAllByRole("button", { name: /Usun/i });
@@ -141,11 +156,7 @@ describe("TasksComponent", () => {
       {},
     ] as unknown as ReturnType<typeof api.useAddNoteMutation>);
 
-    render(
-      <Provider store={store}>
-        <TasksComponent />
-      </Provider>,
-    );
+    renderWithProvider();
 
     const user = userEvent.setup();
     const input = screen.getByTestId("task-input");
@@ -158,11 +169,72 @@ describe("TasksComponent", () => {
       author: "abc@test.com",
     });
   });
-});
 
-/*
-TODO:
-1. Add tests for deleting all notes functionality.
-2. Add tests for form validation (e.g., submitting empty input).
-3. Add tests for edge cases, such as no notes available.
- */
+  describe("Form Validation", () => {
+    it("should not submit empty input", async () => {
+      const api = await import("../features/notes/notesApi");
+
+      const addNoteTrigger = vi.fn().mockReturnValue({
+        unwrap: () => Promise.resolve({}),
+      });
+
+      vi.mocked(api.useAddNoteMutation).mockReturnValue([
+        addNoteTrigger,
+        {},
+      ] as unknown as ReturnType<typeof api.useAddNoteMutation>);
+
+      renderWithProvider();
+
+      const user = userEvent.setup();
+      await user.keyboard("{Enter}");
+
+      expect(addNoteTrigger).not.toHaveBeenCalled();
+    });
+
+    it("should not submit to short input", async () => {
+      const api = await import("../features/notes/notesApi");
+
+      const addNoteTrigger = vi.fn().mockReturnValue({
+        unwrap: () => Promise.resolve({}),
+      });
+
+      vi.mocked(api.useAddNoteMutation).mockReturnValue([
+        addNoteTrigger,
+        {},
+      ] as unknown as ReturnType<typeof api.useAddNoteMutation>);
+
+      renderWithProvider();
+
+      const user = userEvent.setup();
+      const input = screen.getByTestId("task-input");
+
+      await user.type(input, "A");
+      await user.keyboard("{Enter}");
+
+      expect(addNoteTrigger).not.toHaveBeenCalled();
+    });
+
+    it("should not submit to short input", async () => {
+      const api = await import("../features/notes/notesApi");
+
+      const addNoteTrigger = vi.fn().mockReturnValue({
+        unwrap: () => Promise.resolve({}),
+      });
+
+      vi.mocked(api.useAddNoteMutation).mockReturnValue([
+        addNoteTrigger,
+        {},
+      ] as unknown as ReturnType<typeof api.useAddNoteMutation>);
+
+      renderWithProvider();
+
+      const user = userEvent.setup();
+      const input = screen.getByTestId("task-input");
+
+      await user.type(input, "A".repeat(101));
+      await user.keyboard("{Enter}");
+
+      expect(addNoteTrigger).not.toHaveBeenCalled();
+    });
+  });
+});
