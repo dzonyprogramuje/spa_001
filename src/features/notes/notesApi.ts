@@ -5,8 +5,8 @@ export interface Note {
   title: string;
   author: string;
   kind: "private" | "work";
-  taskCreated: Date | undefined;
-  taskEnd: Date | null;
+  taskCreated: string;
+  taskEnd: string;
 }
 
 export const notesApi = createApi({

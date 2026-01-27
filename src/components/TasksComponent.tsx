@@ -10,6 +10,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Button,
+  type CalendarDate,
   Card,
   CardBody,
   DatePicker,
@@ -18,22 +19,24 @@ import {
   Tab,
   Tabs,
 } from "@heroui/react";
+import { getLocalTimeZone, today } from "@internationalized/date";
+import { useDateFormatter } from "@react-aria/i18n";
 
 const schema = z.object({
   taskInput: z
     .string()
     .min(3, { message: "Tresc musi miec conajmniej 3 znaki" })
     .max(100, { message: "Tresc moze miec maksymalnie 100 znakow" }),
-  taskCreated: z.any(),
-  taskEnd: z.any(),
+  taskEnd: z
+    .any()
+    .refine(
+      (value: CalendarDate | null) => value !== null,
+      "Prosze wybrac date",
+    ),
   isWork: z.boolean(),
 });
 
 type FormFields = z.infer<typeof schema>;
-
-// type FormFields = {
-//   taskInput: string;
-// };
 
 export const TasksComponent = () => {
   const { user } = useAuth();
@@ -47,6 +50,11 @@ export const TasksComponent = () => {
   const [deleteNote] = useDeleteNoteMutation();
   const [addNote] = useAddNoteMutation();
   const [deleteAllNotes] = useDeleteAllMutation();
+
+  const formatter = useDateFormatter({
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
 
   const {
     register,
@@ -62,19 +70,19 @@ export const TasksComponent = () => {
     defaultValues: {
       taskInput: "",
       isWork: false,
-      taskCreated: new Date(),
-      taskEnd: null,
+      taskEnd: today(getLocalTimeZone()),
     },
   });
 
   const handleAddNote = async (data: FormFields) => {
     try {
       await addNote({
-        title: data?.taskInput,
+        title: data.taskInput,
         author: user?.profile.email,
-        taskCreated: data?.taskCreated,
-        taskEnd: data?.taskEnd,
-        kind: data?.isWork ? "work" : "private",
+        // taskCreated: today(getLocalTimeZone()).toString(),
+        taskCreated: new Date().toISOString(),
+        taskEnd: data.taskEnd.toString(),
+        kind: data.isWork ? "work" : "private",
       }).unwrap();
       reset();
     } catch (error) {
@@ -98,7 +106,7 @@ export const TasksComponent = () => {
       {notes?.map((note) => (
         <Card
           key={note.id}
-          className={`border-l-5 ${
+          className={`border-l-3 ${
             note.kind === "private"
               ? "border-primary-500"
               : "border-success-500"
@@ -109,8 +117,9 @@ export const TasksComponent = () => {
               <div>
                 <p className="text-tiny uppercase font-bold">{note.kind}</p>
                 <small className="text-default-500">
-                  {note.taskCreated?.toString()}
+                  Created: {formatter.format(new Date(note.taskCreated))}
                 </small>
+                <p>Deadline: {note.taskEnd}</p>
                 <h4 className="font-bold text-large">{note.title}</h4>
               </div>
               <Button color="danger" onPress={() => deleteNote(note.id)}>
@@ -139,7 +148,6 @@ export const TasksComponent = () => {
                 placeholder="Input your task and press Enter"
               />
             </form>
-            {/*<DatePicker className="" label="Birth date" />*/}
 
             <Controller
               name="taskEnd"
@@ -153,8 +161,6 @@ export const TasksComponent = () => {
                 />
               )}
             />
-
-            {/*<Switch size="sm">work</Switch>*/}
 
             <Controller
               name="isWork"
