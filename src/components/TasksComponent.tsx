@@ -21,6 +21,7 @@ import {
 } from "@heroui/react";
 import { getLocalTimeZone, today } from "@internationalized/date";
 import { useDateFormatter } from "@react-aria/i18n";
+import { useState } from "react";
 
 const schema = z.object({
   taskInput: z
@@ -39,13 +40,15 @@ const schema = z.object({
 type FormFields = z.infer<typeof schema>;
 
 export const TasksComponent = () => {
+  const [selectedTab, setSelectedTab] = useState<string>("all");
+
   const { user } = useAuth();
   const email = user?.profile.email as string;
   const {
     data: notes,
     error,
     isLoading,
-  } = useGetNotesQuery(email, { skip: !email });
+  } = useGetNotesQuery({ email, selectedTab }, { skip: !email });
 
   const [deleteNote] = useDeleteNoteMutation();
   const [addNote] = useAddNoteMutation();
@@ -178,15 +181,20 @@ export const TasksComponent = () => {
           </CardBody>
         </Card>
 
-        <Tabs aria-label="Options" className="flex" fullWidth>
+        <Tabs
+          aria-label="Options"
+          className="flex"
+          fullWidth
+          onSelectionChange={(key) => setSelectedTab(key as string)}
+        >
           <Tab key="all" title="All tasks">
             {renderNotes}
           </Tab>
           <Tab key="private" title="Private">
-            hoho private
+            {renderNotes}
           </Tab>
           <Tab key="work" title="Work">
-            hoho work
+            {renderNotes}
           </Tab>
         </Tabs>
       </div>

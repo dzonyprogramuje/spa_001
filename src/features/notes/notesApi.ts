@@ -20,8 +20,9 @@ export const notesApi = createApi({
   }),
   tagTypes: ["Notes"],
   endpoints: (builder) => ({
-    getNotes: builder.query<Note[], string>({
-      query: (authorId) => `/notes?author=${authorId}`,
+    getNotes: builder.query<Note[], { email: string; selectedTab: string }>({
+      query: ({ email, selectedTab }) =>
+        `/notes?author=${email}&kind=${selectedTab !== "all" ? selectedTab : ""}`,
       providesTags: ["Notes"],
     }),
     addNote: builder.mutation<Note, Partial<Note>>({
