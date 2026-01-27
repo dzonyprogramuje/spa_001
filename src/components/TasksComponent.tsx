@@ -1,6 +1,5 @@
 import {
   useAddNoteMutation,
-  useDeleteNoteMutation,
   useGetNotesQuery,
   useDeleteAllMutation,
 } from "../features/notes/notesApi";
@@ -15,13 +14,17 @@ import {
   CardBody,
   DatePicker,
   Input,
+  Spinner,
   Switch,
   Tab,
   Tabs,
+  Tooltip,
 } from "@heroui/react";
 import { getLocalTimeZone, today } from "@internationalized/date";
-import { useDateFormatter } from "@react-aria/i18n";
+
 import { useState } from "react";
+import { Plus } from "lucide-react";
+import { NotesComponent } from "./NotesComponent.tsx";
 
 const schema = z.object({
   taskInput: z
@@ -50,14 +53,8 @@ export const TasksComponent = () => {
     isLoading,
   } = useGetNotesQuery({ email, selectedTab }, { skip: !email });
 
-  const [deleteNote] = useDeleteNoteMutation();
   const [addNote] = useAddNoteMutation();
   const [deleteAllNotes] = useDeleteAllMutation();
-
-  const formatter = useDateFormatter({
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
 
   const {
     register,
@@ -65,7 +62,8 @@ export const TasksComponent = () => {
     reset,
     setError,
     control,
-    formState: { errors, isSubmitting },
+
+    formState: { errors, isSubmitting, isValid },
   } = useForm<FormFields>({
     mode: "onChange",
     reValidateMode: "onChange",
@@ -82,7 +80,6 @@ export const TasksComponent = () => {
       await addNote({
         title: data.taskInput,
         author: user?.profile.email,
-        // taskCreated: today(getLocalTimeZone()).toString(),
         taskCreated: new Date().toISOString(),
         taskEnd: data.taskEnd.toString(),
         kind: data.isWork ? "work" : "private",
@@ -104,59 +101,32 @@ export const TasksComponent = () => {
     return <div>Błąd podczas ładowania zadań</div>;
   }
 
-  const renderNotes = (
-    <div className="flex flex-col gap-4">
-      {notes?.map((note) => (
-        <Card
-          key={note.id}
-          className={`border-l-3 ${
-            note.kind === "private"
-              ? "border-primary-500"
-              : "border-success-500"
-          }`}
-        >
-          <CardBody>
-            <div className="flex justify-between items-center">
-              <div>
-                <p className="text-tiny uppercase font-bold">{note.kind}</p>
-                <small className="text-default-500">
-                  Created: {formatter.format(new Date(note.taskCreated))}
-                </small>
-                <p>Deadline: {note.taskEnd}</p>
-                <h4 className="font-bold text-large">{note.title}</h4>
-              </div>
-              <Button color="danger" onPress={() => deleteNote(note.id)}>
-                Remove
-              </Button>
-            </div>
-          </CardBody>
-        </Card>
-      ))}
-    </div>
-  );
-
   return (
-    <div className="flex w-1/2 mx-auto gap-4">
-      <div className="flex flex-col gap-4 flex-1">
-        <Card>
-          <CardBody className="flex flex-col gap-4">
-            <form onSubmit={handleSubmit(handleAddNote)}>
-              <Input
-                isInvalid={!!errors.taskInput}
-                errorMessage={errors?.taskInput && errors.taskInput.message}
-                data-testid="task-input"
-                {...register("taskInput")}
-                disabled={isSubmitting}
-                type="text"
-                placeholder="Input your task and press Enter"
-              />
-            </form>
+    <div className="flex w-full max-w-5xl px-6 flex-col gap-4 flex-1 mx-auto">
+      <Card shadow="sm">
+        <CardBody>
+          <h2 className="font-extrabold text-3xl mb-4">Create task</h2>
+          <form onSubmit={handleSubmit(handleAddNote)}>
+            <Input
+              className="h-18"
+              isInvalid={!!errors.taskInput}
+              errorMessage={errors?.taskInput && errors.taskInput.message}
+              data-testid="task-input"
+              {...register("taskInput")}
+              disabled={isSubmitting}
+              type="text"
+              placeholder="Input your task and press Enter"
+              size="lg"
+            />
+          </form>
 
+          <div className="flex justify-between">
             <Controller
               name="taskEnd"
               control={control}
               render={({ field }) => (
                 <DatePicker
+                  className="w-48"
                   {...field}
                   label="Task end date"
                   // HeroUI DatePicker potrzebuje onChange przekazanego bezpośrednio
@@ -165,65 +135,72 @@ export const TasksComponent = () => {
               )}
             />
 
-            <Controller
-              name="isWork"
-              control={control}
-              render={({ field }) => (
-                <Switch
-                  isSelected={field.value}
-                  onValueChange={field.onChange}
-                  size="sm"
-                >
-                  Work
-                </Switch>
-              )}
-            />
-          </CardBody>
-        </Card>
+            <div className="flex justify-end items-center gap-4">
+              <Controller
+                name="isWork"
+                control={control}
+                render={({ field }) => (
+                  <Tooltip
+                    content="Is this task work related?"
+                    color="primary"
+                    closeDelay={50}
+                  >
+                    <Switch
+                      isSelected={field.value}
+                      onValueChange={field.onChange}
+                      size="sm"
+                    >
+                      Work
+                    </Switch>
+                  </Tooltip>
+                )}
+              />
+              <Button
+                color="primary"
+                isDisabled={!isValid}
+                endContent={<Plus size={18} />}
+                onPress={handleSubmit(handleAddNote)}
+                isLoading={isLoading}
+              >
+                Create task
+              </Button>
+            </div>
+          </div>
+        </CardBody>
+      </Card>
+      <Tabs
+        fullWidth
+        aria-label="Options"
+        className="flex"
+        size="lg"
+        onSelectionChange={(key) => setSelectedTab(key as string)}
+      >
+        <Tab key="all" title="All tasks">
+          {isLoading ? <Spinner size="lg" /> : <NotesComponent notes={notes} />}
+        </Tab>
+        <Tab key="private" title="Private">
+          <NotesComponent notes={notes} />
+        </Tab>
+        <Tab key="work" title="Work">
+          <NotesComponent notes={notes} />
+        </Tab>
+      </Tabs>
 
-        <Tabs
-          aria-label="Options"
-          className="flex"
-          fullWidth
-          onSelectionChange={(key) => setSelectedTab(key as string)}
-        >
-          <Tab key="all" title="All tasks">
-            {renderNotes}
-          </Tab>
-          <Tab key="private" title="Private">
-            {renderNotes}
-          </Tab>
-          <Tab key="work" title="Work">
-            {renderNotes}
-          </Tab>
-        </Tabs>
-      </div>
-
-      <div className="flex rounded-md">
-        <Button
-          color="danger"
-          isDisabled={!notes || notes.length === 0}
-          onPress={() => deleteAllNotes(notes)}
-        >
-          Remove all
-        </Button>
-      </div>
+      <Button
+        className="w-min"
+        color="danger"
+        isDisabled={!notes || notes.length === 0}
+        onPress={() => deleteAllNotes(notes)}
+        isLoading={isLoading}
+        hidden={!notes || notes.length === 0}
+      >
+        Remove all
+      </Button>
     </div>
   );
 };
 
 /*
 TODO:
-1. Adjust task end date callendar
-2. adjust displaying date format
-3. display task end date in tas too
-4. implement filtering tasks in tabs
-
-
-...
-
-
-4. add edit task functionality
-
-
+-> add edit task functionality
  */

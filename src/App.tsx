@@ -1,6 +1,6 @@
 import { useAuth } from "react-oidc-context";
-import { HeaderComponent } from "./components/HeaderComponent.tsx";
 import { TasksComponent } from "./components/TasksComponent.tsx";
+import { NavbarComponent } from "./components/NavbarComponent.tsx";
 
 function App() {
   const { isLoading, error, isAuthenticated, signinRedirect } = useAuth();
@@ -16,7 +16,7 @@ function App() {
   if (isAuthenticated) {
     return (
       <div className="h-screen w-screen flex flex-col gap-8">
-        <HeaderComponent />
+        <NavbarComponent />
         <TasksComponent />
       </div>
     );

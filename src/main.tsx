@@ -6,6 +6,7 @@ import { AuthProvider } from "react-oidc-context";
 import { Provider } from "react-redux";
 import { store } from "./store/store.ts";
 import { HeroUIProvider } from "@heroui/react";
+import { ThemeProvider } from "next-themes";
 
 const oidcConfig = {
   authority: "http://127.0.0.1:8080/realms/my-dev-realm",
@@ -24,7 +25,9 @@ createRoot(document.getElementById("root")!).render(
     <AuthProvider {...oidcConfig}>
       <Provider store={store}>
         <HeroUIProvider>
-          <App />
+          <ThemeProvider attribute="class" defaultTheme="dark">
+            <App />
+          </ThemeProvider>
         </HeroUIProvider>
       </Provider>
     </AuthProvider>
