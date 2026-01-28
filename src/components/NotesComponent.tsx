@@ -62,6 +62,7 @@ export const NotesComponent = ({ notes }: { notes: Note[] | undefined }) => {
                       closeDelay={0}
                     >
                       <Button
+                        data-testid="remove"
                         isIconOnly
                         size="sm"
                         variant="light"

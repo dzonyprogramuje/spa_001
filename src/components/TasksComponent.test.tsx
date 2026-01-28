@@ -7,8 +7,18 @@ import type { User } from "oidc-client-ts";
 import { mockNotes } from "../features/notes/notesApi.test.tsx";
 import userEvent from "@testing-library/user-event";
 import { expect } from "vitest";
+import { MemoryRouter } from "react-router";
 
 import * as api from "../features/notes/notesApi.ts";
+
+class ResizeObserverMock {
+  observe = vi.fn();
+  unobserve = vi.fn();
+  disconnect = vi.fn();
+}
+
+// Podstawiamy klasę pod globalny obiekt window
+vi.stubGlobal("ResizeObserver", ResizeObserverMock);
 
 const mockGetNotes = (opts: {
   data?: unknown;
@@ -42,16 +52,28 @@ vi.mock("../features/notes/notesApi", () => ({
   useDeleteAllMutation: vi.fn(() => [vi.fn(), {}]),
 }));
 
+vi.mock("@react-aria/i18n", () => ({
+  useDateFormatter: () => ({
+    format: () => "2024-01-01 12:00",
+  }),
+}));
+
 const renderWithProvider = () =>
   render(
     <Provider store={store}>
-      <TasksComponent />
+      <MemoryRouter initialEntries={["/tasks"]}>
+        <TasksComponent />
+      </MemoryRouter>
     </Provider>,
   );
 
 describe("TasksComponent", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+
+    const date = new Date("2026-01-01T12:00:00Z");
+    // vi.useFakeTimers();
+    vi.setSystemTime(date);
 
     vi.mocked(useAuth).mockReturnValue({
       user: { profile: { email: "abc@test.com" } } as Partial<User>,
@@ -64,9 +86,15 @@ describe("TasksComponent", () => {
     renderWithProvider();
 
     expect(api.useGetNotesQuery).toHaveBeenCalled();
-    expect(api.useGetNotesQuery).toHaveBeenCalledWith("abc@test.com", {
-      skip: false,
-    });
+    expect(api.useGetNotesQuery).toHaveBeenCalledWith(
+      {
+        email: "abc@test.com",
+        selectedTab: "all",
+      },
+      {
+        skip: false,
+      },
+    );
   });
 
   it("should render loading state", () => {
@@ -117,7 +145,7 @@ describe("TasksComponent", () => {
     renderWithProvider();
 
     const user = userEvent.setup();
-    const deleteButtons = screen.getAllByRole("button", { name: /Usun/i });
+    const deleteButtons = screen.getAllByTestId("remove");
 
     await user.click(deleteButtons[0]!);
 
@@ -140,6 +168,9 @@ describe("TasksComponent", () => {
     expect(addNoteTrigger).toHaveBeenCalledWith({
       title: "New Task",
       author: "abc@test.com",
+      kind: "private",
+      taskCreated: "2026-01-01T12:00:00.000Z",
+      taskEnd: "2026-01-01",
     });
   });
 

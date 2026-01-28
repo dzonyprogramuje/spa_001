@@ -9,7 +9,10 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "server": "json-server --watch db/db.json --port 3001",
-    "test": "vitest"
+    "test": "vitest",
+    "keycloak:up": "docker compose -f docker/docker-compose.yaml up -d",
+    "keycloak:down": "docker compose -f docker/docker-compose.yaml down",
+    "keycloak:logs": "docker compose -f docker/docker-compose.yaml logs -f"
   },
   "dependencies": {
     "@heroui/react": "^2.8.7",
@@ -27,6 +30,7 @@
     "react-hook-form": "^7.71.1",
     "react-oidc-context": "^3.3.0",
     "react-redux": "^9.2.0",
+    "react-router": "^7.13.0",
     "tailwindcss": "^4.1.18",
     "zod": "^4.3.5"
   },

@@ -11,20 +11,33 @@ import { store } from "../../store/store";
 import { describe, it, expect } from "vitest";
 import { act } from "react";
 
-const mockEmail = "test@test.com";
+const email = "test@test.com";
+const selectedTab = "all";
 
-export const mockNotes = [
+export const mockNotes: Note[] = [
   {
-    id: "1",
+    id: 1,
     title: "Title 1",
-    author: mockEmail,
+    author: email,
+    kind: "work",
+    taskEnd: "2024-12-31",
+    taskCreated: "2024-01-01T12:00:00.000Z",
   },
   {
-    id: "2",
+    id: 2,
     title: "Title 2",
-    author: mockEmail,
+    author: email,
+    kind: "work",
+    taskEnd: "2024-12-31",
+    taskCreated: "2024-01-01T12:00:00.000Z",
   },
 ];
+
+vi.mock("@react-aria/i18n", () => ({
+  useDateFormatter: () => ({
+    format: () => "2024-01-01 12:00",
+  }),
+}));
 
 describe("notesApi", () => {
   it("should delete a note", async () => {
@@ -73,9 +86,12 @@ describe("notesApi", () => {
       <Provider store={store}>{children}</Provider>
     );
 
-    const { result } = renderHook(() => useGetNotesQuery(mockEmail), {
-      wrapper,
-    });
+    const { result } = renderHook(
+      () => useGetNotesQuery({ email, selectedTab }),
+      {
+        wrapper,
+      },
+    );
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);

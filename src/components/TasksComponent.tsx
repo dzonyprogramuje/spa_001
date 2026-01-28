@@ -22,28 +22,33 @@ import {
 } from "@heroui/react";
 import { getLocalTimeZone, today } from "@internationalized/date";
 
-import { useState } from "react";
+import { type Key, useState } from "react";
 import { Plus } from "lucide-react";
 import { NotesComponent } from "./NotesComponent.tsx";
 
 const schema = z.object({
   taskInput: z
     .string()
-    .min(3, { message: "Tresc musi miec conajmniej 3 znaki" })
-    .max(100, { message: "Tresc moze miec maksymalnie 100 znakow" }),
+    .min(3, { message: "Must be at least 3 characters long" })
+    .max(100, { message: "Cannot exceed 100 characters" }),
   taskEnd: z
     .any()
     .refine(
       (value: CalendarDate | null) => value !== null,
-      "Prosze wybrac date",
+      "Date field is required",
     ),
   isWork: z.boolean(),
 });
 
 type FormFields = z.infer<typeof schema>;
+enum TabOptions {
+  ALL = "all",
+  PRIVATE = "private",
+  WORK = "work",
+}
 
 export const TasksComponent = () => {
-  const [selectedTab, setSelectedTab] = useState<string>("all");
+  const [selectedTab, setSelectedTab] = useState<TabOptions>(TabOptions.ALL);
 
   const { user } = useAuth();
   const email = user?.profile.email as string;
@@ -173,15 +178,15 @@ export const TasksComponent = () => {
         aria-label="Options"
         className="flex"
         size="lg"
-        onSelectionChange={(key) => setSelectedTab(key as string)}
+        onSelectionChange={(key: Key) => setSelectedTab(key as TabOptions)}
       >
-        <Tab key="all" title="All tasks">
+        <Tab key={TabOptions["ALL"]} title="All tasks">
           {isLoading ? <Spinner size="lg" /> : <NotesComponent notes={notes} />}
         </Tab>
-        <Tab key="private" title="Private">
+        <Tab key={TabOptions["PRIVATE"]} title="Private">
           <NotesComponent notes={notes} />
         </Tab>
-        <Tab key="work" title="Work">
+        <Tab key={TabOptions["WORK"]} title="Work">
           <NotesComponent notes={notes} />
         </Tab>
       </Tabs>
@@ -203,4 +208,5 @@ export const TasksComponent = () => {
 /*
 TODO:
 -> add edit task functionality
+-> use enum for setSelectedTab
  */

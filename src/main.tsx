@@ -1,12 +1,15 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import "./index.css";
-import App from "./App.tsx";
+
 import { AuthProvider } from "react-oidc-context";
 import { Provider } from "react-redux";
-import { store } from "./store/store.ts";
 import { HeroUIProvider } from "@heroui/react";
 import { ThemeProvider } from "next-themes";
+
+import { store } from "./store/store.ts";
+import "./index.css";
+import { RouterProvider } from "react-router/dom";
+import { router } from "./components/router.tsx";
 
 const oidcConfig = {
   authority: "http://127.0.0.1:8080/realms/my-dev-realm",
@@ -26,7 +29,7 @@ createRoot(document.getElementById("root")!).render(
       <Provider store={store}>
         <HeroUIProvider>
           <ThemeProvider attribute="class" defaultTheme="dark">
-            <App />
+            <RouterProvider router={router} />
           </ThemeProvider>
         </HeroUIProvider>
       </Provider>
