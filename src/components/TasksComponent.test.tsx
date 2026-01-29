@@ -1,7 +1,7 @@
 import { Provider } from "react-redux";
 import { store } from "../store/store.ts";
 import { render, screen } from "@testing-library/react";
-import { TasksComponent } from "./TasksComponent.tsx";
+import { TasksPage } from "../pages/TasksPage";
 import { useAuth } from "react-oidc-context";
 import type { User } from "oidc-client-ts";
 import { mockNotes } from "../features/notes/notesApi.test.tsx";
@@ -11,13 +11,12 @@ import { MemoryRouter } from "react-router";
 
 import * as api from "../features/notes/notesApi.ts";
 
-class ResizeObserverMock {
-  observe = vi.fn();
-  unobserve = vi.fn();
-  disconnect = vi.fn();
+class ResizeObserverMock implements ResizeObserver {
+  observe: ResizeObserver["observe"] = () => {};
+  unobserve: ResizeObserver["unobserve"] = () => {};
+  disconnect: ResizeObserver["disconnect"] = () => {};
 }
 
-// Podstawiamy klasę pod globalny obiekt window
 vi.stubGlobal("ResizeObserver", ResizeObserverMock);
 
 const mockGetNotes = (opts: {
@@ -32,12 +31,12 @@ const mockGetNotes = (opts: {
   } as unknown as ReturnType<typeof api.useGetNotesQuery>);
 };
 
-const mockMutation = <T extends (...args: any[]) => any>(
-  hook: T,
+const mockMutation = (
+  hook: any,
   triggerImpl: (...args: any[]) => any = () => {},
 ) => {
   const trigger = vi.fn(triggerImpl);
-  vi.mocked(hook).mockReturnValue([trigger, {}]);
+  vi.mocked(hook).mockReturnValue([trigger, {}] as any);
   return trigger;
 };
 
@@ -62,12 +61,12 @@ const renderWithProvider = () =>
   render(
     <Provider store={store}>
       <MemoryRouter initialEntries={["/tasks"]}>
-        <TasksComponent />
+        <TasksPage />
       </MemoryRouter>
     </Provider>,
   );
 
-describe("TasksComponent", () => {
+describe("TasksPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
