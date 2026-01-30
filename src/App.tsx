@@ -1,5 +1,5 @@
 import { useAuth } from "react-oidc-context";
-import { TasksComponent } from "./components/TasksComponent.tsx";
+import { TasksPage } from "@pages/TasksPage.tsx";
 import { NavbarComponent } from "./components/NavbarComponent.tsx";
 
 function App() {
@@ -17,7 +17,7 @@ function App() {
     return (
       <div className="h-screen w-screen flex flex-col gap-8">
         <NavbarComponent />
-        <TasksComponent />
+        <TasksPage />
       </div>
     );
   }
